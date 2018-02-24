@@ -9,7 +9,7 @@ output:
 ---
 
 
-##一、读入数据
+## 一、读入数据
 ```{r,warning=FALSE,message=FALSE}
 library(ggplot2)
 library(grid)
@@ -27,8 +27,8 @@ summary(cellphone)
 #可以看到q8,q22,q28有异常值，应该是录入错误
 ```
 
-##二、数据预处理
-###1.缺失值处理
+## 二、数据预处理
+### 1.缺失值处理
 ```{r warning=FALSE,message=FALSE}
 #人口学特征的缺失值
 length(is.na(cellphone[,31:34]))/4
@@ -43,7 +43,7 @@ cellphone$q15[is.na(cellphone$q15)] = median(na.omit(cellphone$q15[cellphone$bra
 
 ```
 
-###2.手机品牌字符串规范化
+### 2.手机品牌字符串规范化
 ```{r warning=FALSE,message=FALSE}
 cellphone$q32[grepl("iphone", cellphone$q32, fixed = TRUE)] = "苹果"  #grepl返回TRUE,FALSE值
 cellphone$q32[grepl("iPhone", cellphone$q32, fixed = TRUE)] = "苹果"
@@ -56,7 +56,7 @@ cellphone$q32[grepl("索尼爱立信", cellphone$q32, fixed = TRUE)] = "索爱"
 
 ```
 
-###3.删除存在录入错误的样本
+### 3.删除存在录入错误的样本
 ```{r warning=FALSE,message=FALSE}
 dele1 = NULL
 for(j in 3:30)
@@ -70,7 +70,7 @@ cellphone = cellphone[-dele1,]
 summary(cellphone)
 ```
 
-###4.删除多变量离群值
+### 4.删除多变量离群值
 ```{r warning=FALSE,message=FALSE}
 outlier.scores = lofactor(cellphone[,3:30],k=5)
 plot(density(outlier.scores)) #离群得分分布
@@ -83,8 +83,8 @@ dele2 = print(outliers) #删除哪几行
 cellphone = cellphone[-dele2,]
 ```
 
-##三、描述统计
-###1.人口学特征
+## 三、描述统计
+### 1.人口学特征
 ```{r warning=FALSE,message=FALSE}
 mainBrand = sort(table(cellphone$q32),decreasing = T)[2:9]
 names(mainBrand)
@@ -114,13 +114,13 @@ print(edu,vp = vplayout(2, 1))
 print(brand,vp = vplayout(2,2))
 ```
 
-###2.相关性分析
+### 2.相关性分析
 ```{r warning=FALSE,message=FALSE}
 corrplot(cor(cellphone[,3:30]),tl.col = "black",method = "color")
 ```
 
-##四、因子分析
-###1.用户体验、性价比、象征价值
+## 四、因子分析
+### 1.用户体验、性价比、象征价值
 ```{r warning=FALSE,message=FALSE}
 cellphone1 = cellphone[,3:24][,c(-6,-7,-8,-18,-19,-22)]
 # cellphone1 = cellphone[,3:24][,c(-6,-7,-8,-17,-18,-19,-21,-22)]
@@ -144,7 +144,7 @@ head(fa2$scores)#因子得分   PA1用户体验  PA3象征价值 PA2性价比
 fa2$weights#因子得分的权重系数
 ```
 
-###2.满意度、忠诚度
+### 2.满意度、忠诚度
 ```{r warning=FALSE,message=FALSE}
 cellphone2 = cellphone[,25:30]
 # par(mfrow=c(1,1))
@@ -153,8 +153,8 @@ fa3=fa(cellphone2,nfactors=2,rotate="varimax",fm="pa")#进行因子旋转（旋�
 fa3
 ```
 
-##五、回归分析
-###1.形成数据
+## 五、回归分析
+### 1.形成数据
 ```{r warning=FALSE,message=FALSE}
 data = data.frame(cbind(cellphone[,1:2],fa2$scores,fa3$scores))
 colnames(data) = c("样本ID","品牌","用户体验","象征价值","性价比","忠诚度","满意度")
@@ -163,7 +163,7 @@ data$品牌 = as.factor(data$品牌)
 
 ```
 
-###2.相关图
+### 2.相关图
 ```{r warning=FALSE,message=FALSE}
 par(mfrow = c(2,2))
 for(i in 1:4)
@@ -176,7 +176,7 @@ for(i in 1:4)
 
 ```
 
-###3.四种手机品牌五个因子得分的箱线图
+### 3.四种手机品牌五个因子得分的箱线图
 ```{r warning=FALSE,message=FALSE}
 ScorePlot = function(name,data)
 {
@@ -202,9 +202,9 @@ for(i in 1:5)
 
 ```
 
-###4.回归分析
+### 4.回归分析
 
-####相关分析
+#### 相关分析
 ```{r warning=FALSE,message=FALSE}
 grid.newpage()
 pushViewport(viewport(layout = grid.layout(2,3)))
