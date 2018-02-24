@@ -18,7 +18,7 @@ library(dplyr)
 library(plotly)
 ```
 
-##Population&GNI
+## Population&GNI
 ```{r,warning=FALSE,message=FALSE}
 data1=select(data0,c(Region2,country,Population.Millions,Gross.national.income.billions))
 
@@ -38,12 +38,12 @@ echartr(data0, country,Population.ages.0.14,type="map_world",subtype='average') 
                color=c('red','orange','yellow','limegreen','green'))
 ```
 
-##经济：Income Group
+## 经济：Income Group
 ```{r,warning=FALSE,message=FALSE}
 ggplot(data0,aes(x=Region2,fill=Income.Group2))+geom_bar()+
   coord_polar(theta = "x")
 ```
-##生活水平：人均GNIB、人均GNI、人口
+## 生活水平：人均GNIB、人均GNI、人口
 ```{r,warning=FALSE,message=FALSE}
 ggplot(data0,aes(x=per.capita.GNI,y=per.capita.GNIb,size=Population.Millions))+
   geom_point(shape=21,colour="black",fill="lightblue",alpha = 0.8)+
@@ -54,7 +54,7 @@ ggplot(data0,aes(x=Gross.domestic.product.per.capita,fill=Region2))+
   geom_histogram(bins = 20,alpha=0.4)+facet_wrap(~Region2)+xlim(-10,15)+xlab("GDP per capital")
 ```
 
-##预期寿命Male.years/Female.years
+## 预期寿命Male.years/Female.years
 ```{r,warning=FALSE,message=FALSE}
 ##各洲情况对比
 data3=select(data0,c(Region2,Male.years,Female.years))
@@ -89,7 +89,7 @@ p3_2=ggplot(data =data3_2,
 ggplotly(p3_2)
 ```
 
-##文化水平Adult.literacy.rate
+## 文化水平Adult.literacy.rate
 ```{r,warning=FALSE,message=FALSE}
 data4=select(data0,c(Region2,country,Adult.literacy.rate))
 data4$Adult.literacy.rate=as.numeric(as.character(data4$Adult.literacy.rate))
