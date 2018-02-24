@@ -1,0 +1,132 @@
+---
+title: "中国热门城市房地产的投资潜力评价"
+author: "司徒雪颖"
+date: "2017年9月24日"
+output:
+  prettydoc::html_pretty:
+    theme:  hpstr
+    highlight: github
+---
+
+
+##一、读入数据
+```{r,warning=FALSE}
+library(ggplot2)
+library(corrplot)
+library("grid")
+setwd("E:/研究生/graduate/EDA/第二次课9.21/")
+CityInvest = read.csv("城市投资潜力.csv")
+CityInvest
+```
+
+##二、描述统计
+###(一)各指标分布情况
+```{r,warning=F}
+#变异系数
+cv = apply(CityInvest[,-1],2,sd)/apply(CityInvest[,-1],2,mean)
+data.frame(cv)
+```
+```{r,warning=FALSE,message=FALSE}
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(2, 4)))
+vplayout <- function(x, y) {
+  viewport(layout.pos.row = x, layout.pos.col = y)
+}
+# 写循环批量绘图
+for(i in 1:8)
+{
+  p = ggplot(data = CityInvest,aes_string(names(cv)[i]))
+  p = p + stat_bin(aes(y = ..count..),geom = "histogram",
+                   alpha = 0.5,fill = I("steelblue"))
+  p = p + geom_text(aes(x = range(CityInvest[,i+1]),y = 1.3,
+                    label = c(as.character(CityInvest$城市[which.min(CityInvest[,i+1])]),
+                              as.character(CityInvest$城市[which.max(CityInvest[,i+1])]))),
+                    size = 3)
+  p = p + labs(title = paste("变异系数：",round(cv[i],2)))
+  p = p + theme(axis.text.x = element_text(size = 3))
+  if (i < 5) {
+    print(p, vp = vplayout(1, i))
+  } else {
+    print(p, vp = vplayout(2, i - 4))
+  }
+}
+
+```
+
+### (二)各指标相关情况
+```{r}
+corr = cor(CityInvest[,-1]);corr
+corrplot(corr,tl.col="black")
+```
+
+##三、主成分分析
+###(一)预处理
+####指标正向化
+```{r}
+CityInvest$人均使用面积 = 1/CityInvest$人均使用面积
+```
+
+####无量纲化：均值化
+```{r,warning=F}
+#均值化以消除量纲影响，同时保存各个指标变异程度的差异
+CityInvest1 = data.frame(scale(CityInvest[,-1],center = T,scale = F))
+summary(CityInvest1)
+```
+####筛选指标
+```{r}
+CityInvest2 = CityInvest1[,-7]  #去掉城市化水平和商品房销售面积
+```
+
+###(二)主成分分析
+####计算主成分系数
+```{r}
+pca.fit=princomp(x = CityInvest2)
+summary(pca.fit)  
+plot(pca.fit,type="lines",main="碎石图")  #选择前两个
+pca.fit$loadings  
+cbind(round(pca.fit$loadings[,1:2],2)) #前两个主成分系数
+```
+#### 计算主成分得分
+```{r,warning=F,tidy=TRUE}
+pca.fit$loadings[,1]=pca.fit$loadings[,1]*(-1) #系数改为正的
+pca.fit$scores[,1]=pca.fit$scores[,1]*(-1) #系数改为正的
+CityInvest2$城市 = CityInvest$城市
+CityInvest2[,9:10]=pca.fit$scores[,1:2]    #前2个主成分得分
+names(CityInvest2)[9:10]=c("score1","score2") #变量重命名
+CityInvest2[,9:10]
+```
+
+#### 主成分投影图
+```{r,warning=F}
+l = data.frame(pca.fit$loadings[,1:2])
+colnames(l) = c("第一主成分系数","第二主成分系数")
+p = ggplot(l)
+p = p+xlim(-0.2,0.8)
+p = p + geom_jitter(aes(第一主成分系数,第二主成分系数,colour = rownames(l),size = 4))
+p = p+theme(legend.position = "none")
+p + geom_text(aes(第一主成分系数,第二主成分系数-0.05),
+              label = rownames(l)[1:7],size = 4)
+
+
+s = data.frame(CityInvest2$score1,CityInvest2$score2)
+rownames(s) = CityInvest2$城市
+colnames(s) = c("第一主成分得分","第二主成分得分")
+p = ggplot(s,aes(第一主成分得分,第二主成分得分))
+p = p + geom_jitter(aes(第一主成分得分,第二主成分得分,
+                        colour = rownames(s),size = 第一主成分得分))
+p = p+theme(legend.position = "none")
+p + geom_text(aes(第一主成分得分,第二主成分得分),
+                  label = rownames(s),size = 4)
+
+```
+
+#### 按第一主成分排名
+```{r,warning=FALSE,message=FALSE}
+pca.temp1=CityInvest2[order(CityInvest2$score1,decreasing=TRUE),]  
+# 按第一主成分得分进行排序（降序）
+pca.temp1[1:10,] #综合表现最好的前10名
+par(mfrow=c(1,1))
+rownames(pca.fit$scores) = CityInvest2$城市
+biplot(pca.fit)    #绘制biplot
+
+```

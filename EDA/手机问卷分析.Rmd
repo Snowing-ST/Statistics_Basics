@@ -1,0 +1,260 @@
+---
+title: "手机用户满意度影响因素探析"
+author: "司徒雪颖"
+date: "2017年10月12日"
+output:
+  prettydoc::html_pretty:
+    theme:  hpstr
+    highlight: github
+---
+
+
+##一、读入数据
+```{r,warning=FALSE,message=FALSE}
+library(ggplot2)
+library(grid)
+library(corrplot)
+library(psych)
+library(car)
+library(VIM)
+library(DMwR)
+
+setwd("E:/研究生/研一课程/EDA/第三次课9.28/")
+cellphone = read.csv("手机问卷数据.csv",header=T,na.strings = "NA")
+head(cellphone)
+dim(cellphone)
+summary(cellphone)
+#可以看到q8,q22,q28有异常值，应该是录入错误
+```
+
+##二、数据预处理
+###1.缺失值处理
+```{r warning=FALSE,message=FALSE}
+#人口学特征的缺失值
+length(is.na(cellphone[,31:34]))/4
+#问题的缺失值
+sum(is.na(cellphone[,3:30])) #
+#缺失值分布图
+aggr(cellphone[,3:30],prop=TRUE,numbers=TRUE)
+
+#中位数插补
+cellphone$q4[is.na(cellphone$q4)] = median(na.omit(cellphone$q4[cellphone$brand==4]))
+cellphone$q15[is.na(cellphone$q15)] = median(na.omit(cellphone$q15[cellphone$brand==7]))
+
+```
+
+###2.手机品牌字符串规范化
+```{r warning=FALSE,message=FALSE}
+cellphone$q32[grepl("iphone", cellphone$q32, fixed = TRUE)] = "苹果"  #grepl返回TRUE,FALSE值
+cellphone$q32[grepl("iPhone", cellphone$q32, fixed = TRUE)] = "苹果"
+cellphone$q32[grepl("HTC", cellphone$q32, fixed = TRUE)] = "HTC"
+cellphone$q32[grepl("htc", cellphone$q32, fixed = TRUE)] = "HTC"
+cellphone$q32[grepl("motorola", cellphone$q32, fixed = TRUE)] = "摩托罗拉"
+cellphone$q32[grepl("MOTOROLA", cellphone$q32, fixed = TRUE)] = "摩托罗拉"
+cellphone$q32[grepl("诺基亚", cellphone$q32, fixed = TRUE)] = "诺基亚"
+cellphone$q32[grepl("索尼爱立信", cellphone$q32, fixed = TRUE)] = "索爱"
+
+```
+
+###3.删除存在录入错误的样本
+```{r warning=FALSE,message=FALSE}
+dele1 = NULL
+for(j in 3:30)
+{
+  dele1 = c(dele1,which(cellphone[,j]>7))
+  if(length(which(cellphone[,j]>7))>0) print(j-2) #那一列有缺失
+}
+
+dele1 #删除哪几行
+cellphone = cellphone[-dele1,]
+summary(cellphone)
+```
+
+###4.删除多变量离群值
+```{r warning=FALSE,message=FALSE}
+outlier.scores = lofactor(cellphone[,3:30],k=5)
+plot(density(outlier.scores)) #离群得分分布
+plot(sort(outlier.scores,decreasing=T)[1:40],type='o') 
+sort(outlier.scores,decreasing=T)[1:10]
+outliers = order(outlier.scores,decreasing=T)[1:10]
+outliers
+print(cellphone[,3:30][outliers,])
+dele2 = print(outliers) #删除哪几行
+cellphone = cellphone[-dele2,]
+```
+
+##三、描述统计
+###1.人口学特征
+```{r warning=FALSE,message=FALSE}
+mainBrand = sort(table(cellphone$q32),decreasing = T)[2:9]
+names(mainBrand)
+other = sum(sort(table(cellphone$q32),decreasing = T)[10:24]);other
+Brand = rbind(data.frame(mainBrand),data.frame("Var1" = "其他", "Freq"= other))
+Brand
+```
+
+```{r warning=FALSE,message=FALSE}
+cellphone[,31] = as.factor(cellphone[,31])
+cellphone[,32] = as.factor(cellphone[,32])
+cellphone[,33] = as.factor(cellphone[,33])
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(2, 2)))
+vplayout <- function(x, y) {
+  viewport(layout.pos.row = x, layout.pos.col = y)
+}
+age = ggplot(data = na.omit(cellphone),aes(q29,fill = I("lightblue")))+geom_bar()+xlab("年龄段")+ylab("人数")
+age = age + scale_x_discrete(labels = c("18-25岁","26-30岁","31-35岁"))
+major = age+aes(q30)+scale_x_discrete(labels = c("理科","工科","人文艺术","经管","其他"))+xlab("专业")
+edu = age+aes(q31)+scale_x_discrete(labels = c("中专及以下","大专","本科","硕士及以上"))+xlab("教育背景")
+brand = ggplot(data = Brand,aes(Var1,Freq,fill = I("lightblue")))+geom_bar(stat = "identity")+xlab("手机品牌")+ylab("人数")
+print(age,vp = vplayout(1, 1))
+print(major,vp = vplayout(1, 2))
+print(edu,vp = vplayout(2, 1))
+print(brand,vp = vplayout(2,2))
+```
+
+###2.相关性分析
+```{r warning=FALSE,message=FALSE}
+corrplot(cor(cellphone[,3:30]),tl.col = "black",method = "color")
+```
+
+##四、因子分析
+###1.用户体验、性价比、象征价值
+```{r warning=FALSE,message=FALSE}
+cellphone1 = cellphone[,3:24][,c(-6,-7,-8,-18,-19,-22)]
+# cellphone1 = cellphone[,3:24][,c(-6,-7,-8,-17,-18,-19,-21,-22)]
+head(cellphone1)
+corrplot(cor(cellphone1),tl.col = "black",method = "color",addCoef.col="grey")
+
+```
+
+```{r warning=FALSE,message=FALSE}
+fa.parallel(cellphone1,fa="fa",main="碎石图")
+fa1=fa(cellphone1,nfactors=3,rotate="none",fm="pa")#不进行因子旋转，因子提取方法设为主成分法
+fa1#输出因子分析估计结果。
+
+fa2=fa(cellphone1,nfactors=3,rotate="varimax",fm="pa")#进行因子旋转（旋转方法为“varimax”，因子提取方法设为主成分法
+fa2#输出因子分析估计结果
+
+```
+
+```{r warning=FALSE,message=FALSE}
+head(fa2$scores)#因子得分   PA1用户体验  PA3象征价值 PA2性价比
+fa2$weights#因子得分的权重系数
+```
+
+###2.满意度、忠诚度
+```{r warning=FALSE,message=FALSE}
+cellphone2 = cellphone[,25:30]
+# par(mfrow=c(1,1))
+fa.parallel(cellphone2,fa="fa",main="碎石图")
+fa3=fa(cellphone2,nfactors=2,rotate="varimax",fm="pa")#进行因子旋转（旋转方法为“varimax”，因子提取方法设为主成分法
+fa3
+```
+
+##五、回归分析
+###1.形成数据
+```{r warning=FALSE,message=FALSE}
+data = data.frame(cbind(cellphone[,1:2],fa2$scores,fa3$scores))
+colnames(data) = c("样本ID","品牌","用户体验","象征价值","性价比","忠诚度","满意度")
+head(data)
+data$品牌 = as.factor(data$品牌)
+
+```
+
+###2.相关图
+```{r warning=FALSE,message=FALSE}
+par(mfrow = c(2,2))
+for(i in 1:4)
+{
+  f = c(2,4,6,7)
+  labels = c("三星","苹果","HTC","华为")
+  corrplot(cor(data[data$品牌==f[i],3:7]),tl.col = "black",method = "color",addCoef.col="grey")
+  text(3,0,labels = paste("手机品牌：",labels[i],sep = ""))
+}
+
+```
+
+###3.四种手机品牌五个因子得分的箱线图
+```{r warning=FALSE,message=FALSE}
+ScorePlot = function(name,data)
+{
+  p1 = ggplot(data = data,aes_string("品牌",name))
+  p1 = p1+geom_boxplot(aes(fill = I("lightblue")))
+  p1 = p1+scale_x_discrete(labels = c("三星","苹果","HTC","华为"))+ylab(paste(name,"因子得分",sep=""));p1
+  return(p1)
+}
+
+# ScorePlot("象征价值",data)
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(2,3)))
+vplayout <- function(x, y) {
+  viewport(layout.pos.row = x, layout.pos.col = y)
+}
+for(i in 1:5)
+{
+  name = colnames(data)[3:7][i]
+  if(i<4) print(ScorePlot(name,data),vp = vplayout(1, i))
+  else print(ScorePlot(name,data),vp = vplayout(2, i-3))
+}
+
+```
+
+###4.回归分析
+
+####相关分析
+```{r warning=FALSE,message=FALSE}
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(2,3)))
+vplayout <- function(x, y) {
+  viewport(layout.pos.row = x, layout.pos.col = y)
+}
+yname = c("满意度","忠诚度")
+xname = c("用户体验","象征价值","性价比")
+for(j in 1:2)
+{
+  for(i in 1:3)
+  {
+    p = ggplot(data,aes_string(xname[i],yname[j],colour = "品牌"))+
+      geom_point()+stat_smooth(method=lm,se = F)+scale_colour_hue(labels = c("三星","苹果","HTC","华为"))
+    if(j==1) print(p,vp = vplayout(1, i))
+    else print(p,vp = vplayout(2,i))
+  }
+
+}
+```
+
+#### 回归分析
+```{r warning=FALSE,message=FALSE}
+lmmodel = function(data,brand,y)
+{
+  if(brand == "三星"){i = 2}
+  if(brand == "苹果"){i = 4}
+  if(brand == "HTC") {i = 6}
+  if(brand == "华为"){i = 7}
+  
+  if(y == "满意度") {j = 6}
+  if(y == "忠诚度") {j = 7}
+  
+  # i = 2 #品牌
+  # j = 6 #6满意度，7忠诚度
+  lm = lm(data[,j]~data[,3]+data[,4]+data[,5],data,which(data[,2]==i))
+  summary(lm)
+  plot(lm$residuals)
+  text(1:sum(data[,2]==i),lm$residuals,1:sum(data[,2]==i),cex=0.8,pos=3,col="blue")#标记样本点编号
+  return(summary(lm))
+}
+
+lmmodel(data,"苹果","满意度")
+lmmodel(data,"三星","满意度")
+lmmodel(data,"HTC","满意度")
+lmmodel(data,"华为","满意度")
+
+lmmodel(data,"苹果","忠诚度")
+lmmodel(data,"三星","忠诚度")
+lmmodel(data,"HTC","忠诚度")
+lmmodel(data,"华为","忠诚度")
+```
+
