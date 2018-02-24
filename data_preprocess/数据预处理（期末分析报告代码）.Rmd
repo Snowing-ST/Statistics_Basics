@@ -1,0 +1,135 @@
+---
+title: "数据预处理"
+author: "司徒雪颖——中央财经大学"
+date: "2017年11月19日"
+output:
+  prettydoc::html_pretty:
+    theme: Cayman
+    highlight: github
+---
+```{r,warning=FALSE,message=FALSE}
+#数据预处理----------------------------------------------------
+##第一题-------------------------------------------------------
+library(AppliedPredictiveModeling)
+library(caret)
+data(abalone)
+head(abalone)
+dim(abalone)
+
+summary(abalone) #除了type，都是连续性变量
+
+#1)	对数据作图估计预测变量和被解释变量之间的函数关系。
+trellis.par.set(theme = col.whitebg(), warn = FALSE)
+featurePlot(abalone[,-c(1,dim(abalone)[2])],abalone[,dim(abalone)[2]],plot="scatter")
+featurePlot(abalone[,dim(abalone)[2]],abalone[,1],"box")
+#找其他能拟合直线的作图函数
+
+
+#2)	用散点图和相关系数图解释预测变量之间的相关性。
+library(GGally)
+ggpairs(abalone[,-dim(abalone)[2]],diag=list(continuous="bar"))
+ggscatmat(abalone[,-dim(abalone)[2]])
+library(corrplot)
+corrplot(cor(abalone[,-c(1,dim(abalone)[2])]),tl.col="black",method = "square",addCoef.col="grey")
+corrplot.mixed(cor(abalone[,-c(1,dim(abalone)[2])]),tl.col="black",
+               lower = "number",upper = "circle")
+# smoother = loess(Rings~LongestShell,data = abalone[,-1])
+# plot(smoother)
+# xyplot(Rings~LongestShell,data = abalone,type = c("p","smooth"))
+
+# 3)	对预测变量估计重要性得分
+#随机森林
+library(randomForest)
+set.seed(791)
+rfImp <- randomForest(Rings ~ ., data =abalone,ntree = 2000,importance = TRUE)
+vi = varImp(rfImp)
+rownames(vi)[order(vi$Overall,decreasing = T)]
+# 找到一种筛选方法得到预测变量子集，该集合不含冗余变量
+nearZeroVar(abalone)
+highcor = findCorrelation(cor(abalone[,-c(1,dim(abalone)[2])]),0.95)
+head(abalone[,c(highcor+1)])
+initial <- lm(Rings~.,data = abalone[,-c(highcor+1)])
+library(MASS)
+m3 = stepAIC(initial,direction = "both",trace = 1)
+summary(m3)
+m3$coefficients
+
+
+# 4)	对连续型预测变量应用主成分分析，决定多少个不相关的主成分能够代表数据中的信息？
+pca.fit=princomp(x =abalone[,-c(1,dim(abalone))])
+summary(pca.fit)  
+plot(pca.fit,type="lines",main = "碎石图")  
+pca.fit$loadings 
+#选1个
+
+##第二题-------------------------------------------------------
+# 1)	写一个R函数从该模型中模拟数据。
+sim = function(n)
+{
+  set.seed(1994)
+  res = matrix(0,n,6)
+  res = as.data.frame(res)
+  colnames(res) = c("x1","x2","x3","x4","x5","y")
+  for(i in 1:5)
+  {
+    res[,i] = runif(n,0,1)
+  }
+  res$y = 10*sin(pi*res$x1*res$x2)+20*(res$x3-0.5)^2+10*res$x4+5*res$x5+rnorm(n,0,1)
+  return(res)
+}
+
+
+# 2)	随机模拟一个数据集，样本量是500，绘制图形研究预测变量和被解释变量之间的关系。
+simres = sim(500)
+head(simres)
+featurePlot(simres[,1:5],simres$y,plot="scatter")
+# 3)	使用线性回归中的向前法、向后法和逐步回归等变量选择方法，最终模型选择了哪些变量？
+initial <- lm(y~.,data = simres)
+library(MASS)
+m1 = stepAIC(initial,direction ="forward",trace = 0)
+m2 = stepAIC(initial,direction ="backward",trace = 0)
+m3 = stepAIC(initial,direction = "both",trace = 0)
+
+summary(m1)
+summary(m2)
+summary(m3)
+#全部都选了
+
+
+# 4)	应用不同的过滤法，逐个评估变量。一些过滤法同时评估多个变量（如ReliefF算法），
+# 两个有交互效应的预测变量x1和x2否被选中了？是否倾向于选择其中某一个变量？
+
+#逐个评估变量——loess
+loessResult = filterVarImp(simres[,1:5],simres$y,nonpara = T)
+loessResult
+
+
+#逐个评估变量——MIC
+library(minerva)
+micValues=mine(simres[,1:5],simres$y)
+micValues$MIC
+
+#sbf 选了x1, x2, x4, x5.
+
+sbfCtrl <- sbfControl(method = "repeatedcv",
+                        repeats = 5,
+                        verbose = TRUE,
+                        functions = rfSBF)
+rfFilter <- sbf(simres[,1:5],simres$y,
+                   tol = 1.0e-12,
+                   sbfControl = sbfCtrl)
+rfFilter$optVariables
+
+#rfe  选了x1,x2,x3,x4,x5
+profile <- rfe(simres[,1:5],simres$y,
+               sizes = c(1,2,3,4,5),
+               rfeControl = rfeControl(functions=rfFuncs,
+                                       verbose=F,
+                                       repeats = 5,
+                                       method='repeatedcv'))
+# 将结果绘图，发现5个变量的模型精度最高
+plot(profile,type=c('o','g'))
+profile
+profile$optVariables
+
+```
