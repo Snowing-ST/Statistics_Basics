@@ -9,7 +9,7 @@ output:
 ---
 
 
-##一、读入数据
+## 一、读入数据
 ```{r,warning=FALSE}
 library(ggplot2)
 library(corrplot)
@@ -19,8 +19,8 @@ CityInvest = read.csv("城市投资潜力.csv")
 CityInvest
 ```
 
-##二、描述统计
-###(一)各指标分布情况
+## 二、描述统计
+### (一)各指标分布情况
 ```{r,warning=F}
 #变异系数
 cv = apply(CityInvest[,-1],2,sd)/apply(CityInvest[,-1],2,mean)
@@ -59,26 +59,26 @@ corr = cor(CityInvest[,-1]);corr
 corrplot(corr,tl.col="black")
 ```
 
-##三、主成分分析
-###(一)预处理
-####指标正向化
+## 三、主成分分析
+### (一)预处理
+#### 指标正向化
 ```{r}
 CityInvest$人均使用面积 = 1/CityInvest$人均使用面积
 ```
 
-####无量纲化：均值化
+#### 无量纲化：均值化
 ```{r,warning=F}
 #均值化以消除量纲影响，同时保存各个指标变异程度的差异
 CityInvest1 = data.frame(scale(CityInvest[,-1],center = T,scale = F))
 summary(CityInvest1)
 ```
-####筛选指标
+#### 筛选指标
 ```{r}
 CityInvest2 = CityInvest1[,-7]  #去掉城市化水平和商品房销售面积
 ```
 
-###(二)主成分分析
-####计算主成分系数
+### (二)主成分分析
+#### 计算主成分系数
 ```{r}
 pca.fit=princomp(x = CityInvest2)
 summary(pca.fit)  
