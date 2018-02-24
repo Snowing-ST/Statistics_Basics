@@ -1,0 +1,119 @@
+---
+title: "数据可视化"
+author: "司徒雪颖——中央财经大学"
+date: "2017年11月19日"
+output:
+  prettydoc::html_pretty:
+    theme: Cayman
+    highlight: github
+---
+
+```{r,warning=FALSE,message=FALSE}
+# 四、数据可视化
+# 1、在loan data中，自选合适的变量，绘制以下图形：
+library(ggplot2)
+setwd("E:/graduate/class/2017《大数据统计基础》考试题/")
+data<-read.csv("LoanStats3c.csv",header=TRUE,sep=",",skip = 1)
+# head(data)
+# tail(data)
+data = data[1:(dim(data)[1]-4),] #去掉最后4列
+# table(data$term)
+# 1)	分面的风玫瑰图，玫瑰叶片的颜色至少四种；（2分）
+p = ggplot(data,aes(x=grade,fill=term))+geom_bar(position="fill")+coord_polar(theta="x")+labs(title="wind rose map for grade")
+p+theme(plot.title = element_text(size = 20,face = "bold"))
+# 2)	某一个连续型变量的分布直方图，并加入拟合分布线，
+# 直方图的组距和组数自己设定（不要使用默认的），
+# 并且每个柱子里面填上相应的组的频数，整个图片加上一个黑色的外框，
+# 并且图的底色为浅色，柱子为深色，在密度最高的部分加上文字标注“此处密度最大”；
+group2500  = cut(data$loan_amnt,breaks = seq(35000-(35000-1000)/15*16,35000,(35000-1000)/15))
+freq = table(group2500);freq
+Y = freq/length(data$loan_amnt)*0.0005
+X = seq(35000-(35000-1000)/15*16,35000,(35000-1000)/15)[-17]+2266.667/2
+binsize<-diff(range(data$loan_amnt))/15;binsize
+p1 = ggplot(data,aes(x = loan_amnt))+geom_histogram(aes(y=..density..),binwidth=binsize,fill = I("lightblue"))+geom_density(size=1,colour = I("steelblue"))+labs(title="histogram for loan_amnt")
+p1 = p1+theme(plot.title = element_text(size = 20,face = "bold"),panel.background = element_rect(color = "black"))
+p1 = p1+annotate("text",x=10000,y=7.2e-05,label="此处密度最大",size = 5,colour = I("blue"))
+p1+annotate(geom="text",x = X,y=as.numeric(Y),label=as.character(freq),size=4,colour = I("blue"))
+# 3)	某两个连续型变量的密度图，并且在图中找出一个部分加上一个方框与其他部分区别开来
+# （比如说，密度最高或者最低的区域，用一个矩形的方框加以标示）；（3分）
+p2<-ggplot(data,aes(x=loan_amnt,fill=term))
+p2 = p2+geom_histogram(binwidth = 2500,position="identity",alpha=0.4)+labs(title="histogram for loan_amnt group by term")
+p2 = p2 +theme(plot.title = element_text(size = 15,face = "bold"))
+p2 = p2+annotate("rect",xmin=-1000,xmax=36000,ymin=0,ymax=27000,alpha=0.3,fill = "transparent",colour = I("pink"),size = 2)  
+p2+annotate("rect",xmin=5000,xmax=36000,ymin=0,ymax=12000,alpha=0.3,fill = "transparent",colour = I("lightblue"),size = 2)  
+
+
+# 4)	挑选多个连续型变量，进行聚类，并且绘制相应的热图，并进行美化（可以不用全部样本）。（2分）
+# 热图中区块的颜色深浅表示两个观测点的距离远近，邻近的点对应的方格的颜色更深，
+# 而远处的点对应的方格颜色浅。
+data1<-subset(data,select=c(out_prncp,out_prncp_inv,total_pymnt,total_pymnt_inv,total_rec_prncp,total_rec_int))
+data2 = data1[sample(1:dim(data1)[1],100),]#抽取100个样本
+data2<-scale(data2)
+data2<-na.exclude(data2)
+distance_euc<-dist(data2,method="euclidean")
+distance_euc<-as.matrix(distance_euc)
+heatmap(distance_euc,main="Heatmap for loandata",col=cm.colors(256),cexRow = 0.5,labRow="",labCol = "")
+```
+
+```{}
+# 2、使用province数据中合适的变量，绘制两幅不同的图，进行空间数据的展示。（10分）
+library("devtools")
+library(REmap)
+library(stringr)
+
+province = read.csv("province.csv",header = T)
+province = province[-c(1,2),] #去掉年份和单位
+colnames(province)[1] = "省份"
+head(province)
+
+
+prov = mapNames("china") #获取中国省份名称
+prov_geo = get_geo_position(prov) #获取中国省份经纬度数据
+head(prov_geo)
+prov_geo$city = str_trim(prov_geo$city)  #去掉左右的空格
+province$省份 = str_trim(province$省份)
+province$省份 = gsub(" ","",province$省份)
+data_all = merge(prov_geo,province,by.x = "city",by.y = "省份",all.y=T)
+head(data_all)
+
+# 经纬度信息在remapC函数中不需要，在下面的remapH函数绘制热力图中需要
+data_all[,2] = as.numeric(as.character(data_all[,2]))
+data_all[,3] = as.numeric(as.character(data_all[,3]))
+data_all[,4] = as.numeric(as.character(data_all[,4]))
+map = remapC(data_all[,c(1,4)],
+                   maptype = "china",
+                   color = c("red","yellow"),
+                   theme = get_theme(theme ="Sky",
+                                     lineColor = "red",
+                                     backgroundColor ="white",
+                                     titleColor ="#fff",
+                                     borderColor ="black",
+                                     regionColor ="grey",
+                                     labelShow = T,
+                                     pointShow = T,
+                                     pointColor ="gold"),
+                   maxdata = 10999, 
+                   mindata = 331,
+                   title = "中国各省年末人口数（万人）")
+plot(map)
+
+
+#绘制另一种热力图,采用remapH函数
+sales_map2 = remapH(data_all[,c(2,3,5)],
+                   maptype = "china",
+                   theme = get_theme(theme ="Dark",
+                                     lineColor = "red",
+                                     backgroundColor ="white",
+                                     titleColor ="#fff",
+                                     borderColor ="black",
+                                     regionColor ="grey",
+                                     labelShow = T,
+                                     pointShow = T,
+                                     pointColor ="gold"),
+                   blurSize = 35,
+                   color = "blue",
+                   minAlpha = 100,
+                   opacity = 1,
+                   title = "2016年中国各省GDP(亿元)")
+plot(sales_map2)
+```
