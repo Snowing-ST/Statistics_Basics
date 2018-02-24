@@ -1,0 +1,310 @@
+---
+title: "缺失值处理实例分析"
+author: "中央财经大学   司徒雪颖"
+date: "2017年12月5日"
+output:
+  prettydoc::html_pretty:
+    theme: Cayman
+    highlight: github
+---
+
+本例中的数据是纽约市家庭的社会指标电话调查数据，每两年由哥伦比亚大学社会工作学院组织进行的。请进行如下步骤的数据分析工作：
+
+**1.读入数据及数据准备**
+
+（1）将数据siswave.csv读入R后命名为wave，使用attach(wave)函数激活该数据集。
+```{r,warning=FALSE,message=FALSE}
+setwd("E:/graduate/class/数据预处理/缺失值处理作业/")
+wave = read.csv("siswave.csv")
+attach(wave)
+object.size(wave)
+dim(wave) #943列
+```
+
+（2）生成名为earnings的新变量列（要求：单位是$1000，原始数据单位是$），表示家庭总收入，它是由rearn(响应者收入)和tearn（响应者配偶收入）两部分加起来生成的。注意要将rearn和tearn中的负数分配为NA后再求和。统计earnings变量的缺失百分比。
+```{r,warning=FALSE,message=FALSE}
+wave$rearn[wave$rearn<0]=NA
+wave$tearn[wave$tearn<0]=NA
+wave$earnings = wave$rearn+wave$tearn
+sum(is.na(wave$earnings))/length(wave$earnings) #缺失16.72%
+```
+
+（3）生成名为white的新变量列，若race of respondent（1=white, 2=black, 3=hispanic(nonblack),4=other）是1则white=1，否则white均为0。考虑如果race变量有缺失的情况，若缺失则white也为0。（这个步骤就是一个训练数据处理的步骤，如果原数据中有white覆盖掉即可）
+```{r,warning=FALSE,message=FALSE}
+wave$white = rep(0,length(wave$race))
+wave$white[wave$race==1]=1
+table(wave$race)
+table(wave$white)
+```
+
+（4）生成名为male的新变量列，男性male=1，女性male=0。依据是wave中的变量列sex:  male是1, female是2。
+```{r,warning=FALSE,message=FALSE}
+table(wave$sex)
+wave$male[wave$sex==1]=1
+wave$male[wave$sex==2]=0
+table(wave$male)
+
+```
+
+（5）生成名为over65的新变量列，年龄超过65则over65=1，否则over65=0。依据是wave中的年龄变量r_age。
+```{r,warning=FALSE,message=FALSE}
+wave$over65[wave$r_age>65]=1
+wave$over65[wave$r_age<=65]=0
+table(wave$over65)
+```
+
+（6）将变量immig中的缺失值均用0插补。immig=0表示是美国公民,immig=1则不是美国公民。
+```{r,warning=FALSE,message=FALSE}
+sum(is.na(wave$immig)) #34缺失
+wave$immig[is.na(wave$immig)]=0
+```
+
+（7）educ_r表示不同的教育水平。如果是NA，用2.5替换。1至4表示不同的教育水平，依次增高。
+```{r,warning=FALSE,message=FALSE}
+sum(is.na(wave$educ_r))
+wave$educ_r[is.na(wave$educ_r)]=2.5
+```
+
+（8）分别基于变量ssi，welfare，charity，生成名为any.ssi，any.welfare，any.charity的变量，将正值赋值为1，其他负值或缺失值都赋值为0。
+
+```{r,warning=FALSE,message=FALSE}
+# table(wave$ssi) #41缺
+# table(wave$charity)#25
+# table(wave$welfare)#40
+
+wave$any.ssi[wave$ssi>0]=1
+wave$any.ssi[wave$ssi<=0]=0
+wave$any.welfare[wave$welfare>0]=1
+wave$any.welfare[wave$welfare<=0]=0
+wave$any.charity[wave$charity>0]=1
+wave$any.charity[wave$charity<=0]=0
+```
+
+**2.缺失模式探索（Exploration of Missing pattern）**
+
+（1）基于原始数据wave，生成一个新的数据框，命名为sis.sm，
+它依次包括sex,race,edu_r,r_age,earnings,police。给这些不同列合适的类型，比如sex,race,police都设置成因子型。edu_r设置为有序的因子。
+```{r,warning=FALSE,message=FALSE}
+sis.sm = subset(wave,select = c(sex,race,educ_r,r_age,earnings,police))
+head(sis.sm)
+sis.sm$sex = factor(sis.sm$sex,levels = c("1","2"))
+sis.sm$race = factor(sis.sm$race,levels = c("1","2","3","4"))
+sis.sm$police = factor(sis.sm$police,levels = c("0","1"))
+sis.sm$educ_r = ordered(sis.sm$educ_r,levels=c("1","2","2.5","3","4"))
+summary(sis.sm)
+```
+
+（2）判断earnings是否是MCAR（用sis.sm还是wave????）判断方法可以简单的看一下不同种族race是黑人和白人情况下earnings的观测数、缺失观测数和缺失频率。如果他们的缺失频率不相等，那么说明种族race会影响earnings是否缺失。可判断它就不是MCAR。
+```{r,warning=FALSE,message=FALSE}
+white_people = subset(sis.sm,race=="1",select = earnings)
+black_people = subset(sis.sm,race=="2",select = earnings)
+fun1 = function(x){
+  df = data.frame("观测数"=length(x),
+                  "缺失数" = sum(is.na(x)),
+                  "缺失频率"=sum(is.na(x))/length(x))
+  return(df)
+  }
+fun1(white_people$earnings)
+fun1(black_people$earnings)
+```
+缺失频率不相等，说明种族race会影响earnings是否缺失。earnings不是MCAR。
+
+（3）使用mice包里的md.pattern()函数查看数据的缺失模式。（可视化它的观测值和变量列的缺失状况。
+
+由图可以看出，earnings缺失最多，其次是police，race也存在一定程度的缺失
+```{r,warning=FALSE,message=FALSE}
+library(mice)
+library(VIM)
+md.pattern(sis.sm)#matirx, display the missing pattern
+aggr(sis.sm, prop=FALSE, numbers=TRUE) #plot, more intuitional to display
+matrixplot(sis.sm) #all cells of a data matrix are visualized by rectangles
+marginplot(sis.sm[c("race","earnings")], pch=c(20),
+           col=c("darkgray","red","blue"))
+```
+
+（4）最简单的方法是删除有缺失的观测。这里，如果观测中的缺失变量个数百分比超过30%，那么删除这个缺失观测。统计删除了多少观测，保留多少观测。
+```{r,warning=FALSE,message=FALSE}
+library(DMwR)
+manyNAs(sis.sm,0.3)
+dim(sis.sm[manyNAs(sis.sm,0.3),])[1] #删除29个观测
+dim(sis.sm[-manyNAs(sis.sm,0.3),])[1] #保留1472
+sis.sm = sis.sm[-manyNAs(sis.sm,0.3),]
+```
+
+
+**3.简单随机插补（simple random imputation）**
+
+简单随机插补是从存在缺失的变量的已有观测值中随机抽取一个值来插补缺失值。本小题的任务是定义一个名为random.impute的R函数，功能是对收入earnings进行随机插补，返回一个完整的数据。使用该R函数对earnings进行简单随机插补，生成插补后的完整数据earnings.impute。
+```{r,warning=FALSE,message=FALSE}
+random.impute<-function(x)  
+{
+  set.seed(1994)
+  x[is.na(x)] = sample(x[!is.na(x)],sum(is.na(x)),replace = T)
+  return(x)
+}
+earnings.impute<-random.impute(wave$earnings)
+summary(earnings.impute)
+```
+
+**4.回归插补（Using regression predictions to perform deterministic imputation）**
+
+（1）生成新变量earnings.top，将收入earnings超过$100,000的修改为$100,000。目的是避免收入特别高的观测值影响回归结果，有些收入甚至上百万美元。
+```{r,warning=FALSE,message=FALSE}
+wave$earnings.top = wave$earnings
+wave$earnings.top[wave$earnings.top>100000] = 100000
+```
+
+（2）生成新变量workhrs.top，将工作小时数workhrs中每周超过40小时的设置为40小时。虽然有些响应者确实工作时间会超过40小时，这样简单的变换可能提高回归模型的预测性能，避免极端值的影响。
+```{r,warning=FALSE,message=FALSE}
+wave$workhrs.top = wave$workhrs
+wave$workhrs.top[wave$workhrs.top>40] = 40
+```
+
+（3）生成一个数据框名为SIS，包含变量列earnings，earnings.top，male，over65，
+white，immig，educ_r，workmos，workhrs.top，any.ssi，any.welfare，any.charity.
+```{r,warning=FALSE,message=FALSE}
+SIS = subset(wave,select =c(earnings,earnings.top,male,over65,white,immig,educ_r,workmos,workhrs.top,any.ssi,any.welfare,any.charity))
+head(SIS)
+```
+
+（4）以earnings中的非零且非缺失观测值为被解释变量，建立一个回归模型，自变量是male，over65，white，immig，educ_r，workmos，workhrs.top，any.ssi，any.welfare，any.charity.回归模型的结果命名给lm.impute.1。
+```{r,warning=FALSE,message=FALSE}
+lm.impute.1<-lm(earnings~.,data=SIS[,-2], subset= !is.na(SIS$earnings))
+```
+
+（5）将earnings中的缺失值使用模型lm.impute1的预测值进行插补。
+```{r,warning=FALSE,message=FALSE}
+SIS$earnings[is.na(SIS$earnings)] = 
+  predict(lm.impute.1, newdata = SIS[is.na(SIS$earnings),]) 
+```
+
+（6）为预测中低收入的群体，对收入earnings.top进行平方根变换后当作被解释变量建立回归模型，回归模型结果命名为lm.impute.2.sqrt。
+```{r,warning=FALSE,message=FALSE}
+lm.impute.2.sqrt<-lm(I(sqrt(earnings.top))~.,data=SIS[,-1], subset= !is.na(SIS$earnings.top))  
+```
+
+（7）将earnings.top中的缺失值使用模型lm.impute.2.sqrt的预测值进行插补，对比插补前earnings.top的直方图（去掉0收入值）和插补值的直方图（只有两百多个缺失值的插补值）。
+```{r,warning=FALSE,message=FALSE}
+SIS$earnings.top[is.na(SIS$earnings.top)] = 
+  (predict(lm.impute.2.sqrt, newdata = SIS[is.na(SIS$earnings.top),]))^2 
+
+SIS$col=ifelse(complete.cases(wave$earnings.top),"notNA","imputation")
+library(ggplot2)
+ggplot(SIS[SIS$earnings.top>0,], aes(earnings.top, fill = col)) +
+  geom_histogram(alpha = 0.5, position = 'identity')
+```
+
+**5.随机回归插补（Random regression imputation）**
+
+通过在回归模型中增加误差可以将不确定性添加到插补值。插补方法是从正态分布N(xb,sigma^2) （使用回归模型lm.impute.2.sqrt的估计结果）中随机抽样作为插补值。
+提示：使用R函数：rnorm()函数进行抽样再插补。
+```{r,warning=FALSE,message=FALSE}
+#xb即模型预测值，sigma
+SIS$earnings.top_RSI = SIS$earnings.top
+n = sum(SIS$col=="imputation");n
+meann = SIS$earnings.top[SIS$col=="imputation"]
+sd = rep(sqrt(var(lm.impute.2.sqrt$residuals)),n)
+SIS$earnings.top_RSI[SIS$col=="imputation"] = rnorm(n,meann,sd)
+ggplot(SIS[SIS$earnings.top_RSI>0,], aes(earnings.top_RSI, fill = col)) +
+  geom_histogram(alpha = 0.5, position = 'identity')
+```  
+  
+**6. 两阶段插补**
+
+第一，	插补收入是否为正的indicator variable插补方法是使用其他所有的自变量（male，over65，white，immig，educ_r，workmos，workhrs.top，any.ssi，any.welfare，any.charity） 建立Logisitic回归模型:
+```{r,warning=FALSE,message=FALSE}
+SIS = subset(wave,select = c(earnings,earnings.top,male,over65,white,immig,educ_r,
+                             workmos,workhrs.top,any.ssi,any.welfare,any.charity))
+SIS$col=ifelse(complete.cases(wave$earnings.top),"notNA","imputation")
+head(SIS)
+dim(SIS)#1501   12
+summary(SIS) #earnings251缺失值
+
+glm.indicator<-glm(I(earnings>0)~male+over65+white+immig+educ_r+any.ssi+any.welfare+any.charity,data=SIS,family=binomial(link=logit))
+```
+
+对缺失观测，使用模型glm.indicator预测earnings为正的概率 。
+```{r,warning=FALSE,message=FALSE}
+p<-predict(glm.indicator,SIS[is.na(SIS$earnings),])
+p=exp(p)/(1+exp(p))
+plot(sort(p))
+```
+
+然后从二项分布Binomial(1,为1的概率)随机一个样本作为的插补值。第二，基于回归模型lm.impute.2.sqrt，使用随机回归插补的方法，为上一步中收入判定为正的缺失值插补一个连续正值。  
+
+```{r,warning=FALSE,message=FALSE}
+rb = rbinom(sum(is.na(SIS$earnings)),1,p)
+SIS$earnings[SIS$col=="imputation"][rb==0]=0
+meann2 = (predict(lm.impute.2.sqrt,SIS[SIS$col=="imputation",][rb!=0,]))^2
+SIS$earnings[SIS$col=="imputation"][rb!=0]=rnorm(sum(rb==1),meann2,sd)
+ggplot(SIS[SIS$earnings>0,], aes(earnings, fill = col)) +
+  geom_histogram(alpha = 0.5, position = 'identity')+xlim(c(0,100000))
+```  
+  
+**7. 迭代回归插补(iterative regression imputation)**
+
+将wave中的变量列interest中的负数设置为NA，使用迭代回归同时插补两列变量interest和earnings。
+```{r,warning=FALSE,message=FALSE}
+wave$interest[wave$interest<0]=NA
+```
+
+回归模型中包括其他所有的完整变量（male，over65，white， immig， educ_r， workmos，workhrs.top，any.ssi，any.welfare，any.charity）作为预测变量X。检查你的插补结果，评价这种方法做出的插补结果的好坏。比如可以通过观测数据和插补后数据的直方图或散点图来评价。
+
+评价：从直方图可以看出，这种方法效果不太好，原因有二。一是无论earnings还是interest，0值特别多，但是两个变量的插补值中，0值只占少部分。二是，两个变量别的未缺失值和插补值的分布并不相同。
+
+```{r,warning=FALSE,message=FALSE}
+iri_data = subset(wave,select = c(earnings,interest,male,over65,white,immig,educ_r,workmos,workhrs.top,any.ssi,any.welfare,any.charity))
+
+head(iri_data)
+dim(iri_data)#1501   12
+summary(iri_data)
+#第3题的简单随机插补
+random.impute<-function(x)  
+{
+  set.seed(1994)
+  x[is.na(x)] = sample(x[!is.na(x)],sum(is.na(x)),replace = T)
+  return(x)
+}
+#变量：含缺失值的数据，含缺失值的列，最大迭代次数，迭代误差小于几就停止迭代
+iri = function(iri_data,mis_col,max_iter_num,thresh)
+{
+  index = apply(iri_data[,mis_col],2,is.na)#true即缺失值
+  iri_data[,mis_col]=apply(iri_data[,mis_col],2,random.impute)
+  imp_tmp = matrix(0,dim(iri_data)[1],length(mis_col)) #imp_tmp存放上一次迭代结果
+  imp_tmp[index] = iri_data[,mis_col][index]
+  for(j in 1:max_iter_num) #最多迭代几次
+  {
+    for(i in 1:length(mis_col)) #插补几列
+    {
+      lm.ssi = lm(iri_data[,mis_col][,i]~.,iri_data[,-mis_col[i]])
+      iri_data[,mis_col][,i][index[,i]] = lm.ssi$fitted.values[index[,i]]
+    }
+    iri_data[,mis_col][index][iri_data[,mis_col][index]<0]=0 #负值改0
+    err = sum((imp_tmp[index] -iri_data[,mis_col][index])^2) 
+    if(err>thresh) #如果两次插补之间的误差平方和小于阈值thresh，则停止迭代
+    {
+      imp_tmp[index] = iri_data[,mis_col][index]
+    }
+    else{
+      break
+    }
+  }
+  return(list(data = iri_data,iteration_number=j,error=err))
+}#返回结果：插补后的数据，实际迭代次数，实际误差平方和
+
+#变量：含缺失值的数据，含缺失值的列，最大迭代次数，迭代误差小于几就停止迭代
+res = iri(iri_data,c(1,2),50,10)
+res$iteration_number#实际迭代次数
+res$error#实际迭代误差
+
+imp_data = res$data
+summary(imp_data)
+imp_data$earnings_col=ifelse(complete.cases(wave$earnings),"notNA","imputation")
+imp_data$interest_col=ifelse(complete.cases(wave$interest),"notNA","imputation")
+library(ggplot2)
+ggplot(imp_data, aes(earnings, fill = earnings_col)) +
+  geom_histogram(alpha = 0.5, position = 'identity',binwidth = 5000)+xlim(c(-5000,200000))
+ggplot(imp_data, aes(interest, fill = interest_col)) +
+  geom_histogram(alpha = 0.5, position = 'identity',binwidth = 1000)+xlim(c(-1000,25000))
+```
+
