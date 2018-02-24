@@ -1,0 +1,106 @@
+---
+title: "可视化期末作业：2014——“数“说世界发展"
+author: "中财：杨艺婷、司徒雪颖"
+date: "2018年1月5日"
+output:
+  prettydoc::html_pretty:
+    theme: Cayman        
+    highlight: github
+---
+## 读取数据
+```{r,warning=FALSE,message=FALSE}
+setwd("E:/graduate/class/可视化/期末作业/")
+data0 = read.csv("data0.csv",na.strings = "..")
+
+library(treemap)
+library(ggplot2)
+library(dplyr)
+library(plotly)
+```
+
+##Population&GNI
+```{r,warning=FALSE,message=FALSE}
+data1=select(data0,c(Region2,country,Population.Millions,Gross.national.income.billions))
+
+treemap(data1, index=c("Region2"), vSize="Population.Millions", title='各大洲人口数量',palette='RdBu')
+treemap(data1, index=c("country"), vSize="Population.Millions", title='世界各国人口数量',palette='RdBu')
+
+data1$Gross.national.income.billions=as.numeric(as.character(data1$Gross.national.income.billions))
+data2=na.omit(data1)
+treemap(data1, index=c("Region2","country"),
+        vSize="Population.Millions",vColor="Gross.national.income.billions",
+        type="value", title='Population.Millions',palette='RdBu')
+
+#地图热力图:
+library(recharts)
+echartr(data0, country,Population.ages.0.14,type="map_world",subtype='average') %>%
+  setDataRange(splitNumber=0, 
+               color=c('red','orange','yellow','limegreen','green'))
+```
+
+##经济：Income Group
+```{r,warning=FALSE,message=FALSE}
+ggplot(data0,aes(x=Region2,fill=Income.Group2))+geom_bar()+
+  coord_polar(theta = "x")
+```
+##生活水平：人均GNIB、人均GNI、人口
+```{r,warning=FALSE,message=FALSE}
+ggplot(data0,aes(x=per.capita.GNI,y=per.capita.GNIb,size=Population.Millions))+
+  geom_point(shape=21,colour="black",fill="lightblue",alpha = 0.8)+
+  scale_size_area(max_size= 15)
+
+#分面:人均GDP增长率,州
+ggplot(data0,aes(x=Gross.domestic.product.per.capita,fill=Region2))+
+  geom_histogram(bins = 20,alpha=0.4)+facet_wrap(~Region2)+xlim(-10,15)+xlab("GDP per capital")
+```
+
+##预期寿命Male.years/Female.years
+```{r,warning=FALSE,message=FALSE}
+##各洲情况对比
+data3=select(data0,c(Region2,Male.years,Female.years))
+data3$Male.years=as.numeric(as.character(data3$Male.years))
+data3$Female.years=as.numeric(as.character(data3$Female.years))
+data3=na.omit(data3)
+library(reshape2)
+redata3<-melt(data3,id.var="Region2") 
+p3=ggplot(redata3, aes(x=Region2,y=value))+geom_boxplot(aes(fill=variable))+
+  xlab("Region") + ylab("Life expectancy") + ggtitle("各大洲健康水平对比") 
+p3
+##各收入水平对比
+data3_1=select(data0,c(Income.Group2,Male.years,Female.years))
+data3_1$Male.years=as.numeric(as.character(data3_1$Male.years))
+data3_1$Female.years=as.numeric(as.character(data3_1$Female.years))
+data3_1=na.omit(data3_1)
+library(reshape2)
+redata3_1<-melt(data3_1,id.var="Income.Group2") 
+redata3_1$Income.Group2=factor(redata3_1$Income.Group2,levels=c("high","middle","Low"))
+p3_1=ggplot(redata3_1, aes(x=Income.Group2,y=value))+geom_boxplot(aes(fill=variable))+
+  xlab("Income.Group") + ylab("Life expectancy") + ggtitle("不同收入国家健康水平对比")  
+p3_1
+##各国家对比，同时按照收入水平分类
+data3_2=select(data0,c(country,Income.Group2,Male.years,Female.years))
+data3_2$Male.years=as.numeric(as.character(data3_2$Male.years))
+data3_2$Female.years=as.numeric(as.character(data3_2$Female.years))
+data3_2=na.omit(data3_2)
+data3_2$Income.Group2=factor(data3_2$Income.Group2,levels=c("high","middle","Low"))
+p3_2=ggplot(data =data3_2, 
+            mapping = aes(x = Male.years, y = Female.years, colour = Income.Group2))+
+  geom_point(size =1.5)+geom_text(aes(label=country), size=3)
+ggplotly(p3_2)
+```
+
+##文化水平Adult.literacy.rate
+```{r,warning=FALSE,message=FALSE}
+data4=select(data0,c(Region2,country,Adult.literacy.rate))
+data4$Adult.literacy.rate=as.numeric(as.character(data4$Adult.literacy.rate))
+data4=na.omit(data4)
+p4=ggplot(data4,aes(x=Region2,y=Adult.literacy.rate,fill=Region2))+
+  geom_boxplot()+xlab("Region")+ggtitle("各洲识字率水平")+
+  guides(fill=guide_legend(title="Region"))
+ggplotly(p4)
+```
+
+
+
+
+
