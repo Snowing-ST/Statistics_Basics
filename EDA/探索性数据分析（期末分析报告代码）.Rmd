@@ -1,0 +1,105 @@
+---
+title: "探索性数据分析"
+author: "司徒雪颖——中央财经大学"
+date: "2017年11月19日"
+output:
+  prettydoc::html_pretty:
+    theme: Cayman
+    highlight: github
+---
+
+## 一、多变量建模思路描述
+- 数据预处理，处理缺失值、异常值等情况
+- 描述性分析，对各个变量的分布有一定了解
+- 特征选择，可用过滤法删除零方差、高相关变量，用封装法挑选重要变量
+- 降维，对定量数据用主成分或者因子分析等方法降维
+- 训练模型
+
+## 二、案例分析：英超数据
+###（一）读入数据
+从summary可以看出，很多计数变量均为右偏分布，如进球、助攻、传球、过人等自变量和下一年进球这个因变量。
+```{r,warning=FALSE,message=FALSE}
+library(corrplot)
+library(caret)
+library(ggplot2)
+
+setwd("E:/graduate/class/2017《大数据统计基础》考试题/")
+soccer = read.csv("英超数据.csv")
+head(soccer,3)
+dim(soccer)
+sum(is.na(soccer))#检测有无缺失值
+summary(soccer)
+```
+
+
+### （二）定性变量描述统计
+由图片可以看出，进球较多的球队为利物浦，阿森纳，阿斯顿维拉，曼城；进球较少的球队为富勒姆，桑德兰，颗粒无收；前锋球员进球数最多，中场次之，后卫最少。因此数据中两个定性变量对因变量是有影响的。
+```{r,warning=FALSE,message=FALSE}
+#定性变量:球队，位置
+cat = c(3,5,34)
+datacat = soccer[,cat] #分类变量
+
+group1 = aggregate(datacat$下一年进球,by = list(datacat$球队),data = datacat,"median")
+SortName1 = group1$Group.1[order(group1$x,decreasing = T)]
+datacat$球队 = factor(datacat$球队,levels = SortName1)
+group2 = aggregate(datacat$下一年进球,by = list(datacat$位置),data = datacat,"median")
+SortName2 = group2$Group.1[order(group2$x,decreasing = T)]
+datacat$位置 = factor(datacat$位置,levels = SortName2)
+#球队
+p = ggplot(datacat)+aes_string("球队","下一年进球")+geom_boxplot(fill = I("lightblue"),outlier.size = NA,outlier.colour = NA)
+p+ylim(0,25)
+#位置
+p+aes_string("位置","下一年进球")
+```
+
+### （三）定量变量描述统计与特征选择（过滤法）
+- 因变量呈右偏分布，进球数集中在0-3个，在后续建模中考虑进行对数处理
+- 删除0方差变量："头球争顶失败"，删除高相关变量（相关系数大于0.85）："进球" "射正"  "解围"  "后场解围"。
+- 从相关图可以看出,变量之间呈中度相关，部分变量之间存在较强相关性，可考虑主成分、因子分析等降维方法。
+
+```{r,warning=FALSE,message=FALSE}
+#去除球员 球队 号码 位置，得到定量变量
+datanum = soccer[,-c(cat[-3],1,4)]
+#因变量分布
+ggplot(datanum,aes_string("下一年进球"))+geom_histogram(fill = I("lightblue"))
+#删除0方差变量
+dele0var = nearZeroVar(datanum,freqCut = 95/5)
+colnames(datanum)[dele0var]
+datanum = datanum[,-dele0var]
+#删除高相关度变量
+corrplot(cor(datanum[,-dim(datanum)[2]]),order = "hclust",addrect = 3,tl.col = "black",tl.cex = 0.7,rect.col = "black")
+deleHighCor = findCorrelation(cor(datanum[,-dim(datanum)[2]]),0.85)
+colnames(datanum)[deleHighCor]
+datanum = datanum[,-deleHighCor]
+summary(datanum)
+```
+### （四）降维
+本案列采用主成分方法降维，进行主成分分析之前先标准化。
+```{r,warning=FALSE,message=FALSE}
+#查看相关图
+head(datanum[,-dim(datanum)[2]],3)
+corrplot(cor(datanum),order = "hclust"
+         ,addrect = 3,tl.col = "black",tl.cex = 0.7,rect.col = "black")
+#标准化以消除量纲影响，同时保存各个指标变异程度的差异
+datanum1 = data.frame(scale(datanum)) #标准化
+```
+从方差累计贡献率可以看出，选择5个变量时已达到67%，可以进行主成分分析。
+```{r,warning=FALSE,message=FALSE}
+pca.fit=princomp(x = datanum1[,-dim(datanum1)[2]])
+summary(pca.fit)  
+plot(pca.fit,type="lines",main = "碎石图")  
+cbind(round(pca.fit$loadings[,1:5],2))
+head(pca.fit$scores[,1:5])
+newfeature<-pca.fit$scores[,1:5]
+
+```
+
+选取前五个主成分对因变量作回归分析，第一第二主成分显著影响下一赛季进球数。
+通过对第一第二主成分各变量贡献进行排序，可以发现，射门、右脚进球、犯规、出场、越位、助攻、拦截、抢断、头球解围、传球、黄牌、左脚进球等变量对下一赛季进球数有明显影响，后续分析中（如机器学习）应予以适当关注。
+```{r,warning=FALSE,message=FALSE}
+model1 = lm(log(datanum1[,dim(datanum1)[2]]+1)~newfeature)
+summary(model1)
+#第一第二主成分依赖的变量排序
+head(as.matrix(pca.fit$loadings[,1][order(abs(pca.fit$loadings[,1]),decreasing = T)]))
+head(as.matrix(pca.fit$loadings[,2][order(abs(pca.fit$loadings[,2]),decreasing = T)]))
+```
