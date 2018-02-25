@@ -1,0 +1,84 @@
+---
+title: "数据预处理——第一次作业"
+author: "司徒雪颖"
+date: "2017年10月30日"
+output: 
+  prettydoc::html_pretty:
+    theme:  hpstr
+    highlight: github
+---
+### 第一题
+```{r,warning=FALSE,message=FALSE}
+library(quantmod)
+# 从oanda上获取汇率函数  #1美元等于多少其他货币
+getMyFX = function(currency)
+{
+  new.environment=new.env()  
+  name = getFX(currency,from="2017-4-26",env=new.environment,src="yahoo")
+  data = get(name,envir=new.environment) 
+  return(as.data.frame(data))
+  # write.csv(as.data.frame(data),paste("cur/",name,".csv",sep = ""))
+}
+
+#读取所有货币的缩写
+#该数据从国家外汇局下载
+setwd("C:/Users/situ.st.1/Desktop/")
+cur = read.csv("世界各国货币缩写.csv",stringsAsFactors = F)
+head(cur)
+curList = cur$short #SDR SSP不在yahoo财经内，要删掉
+dele = which(curList==c("SDR","SSP"))
+curList = curList[-dele]
+USD_curList = paste("USD/",curList,sep = "")  
+head(USD_curList)
+allcurData = lapply(X = USD_curList,FUN = getMyFX) #列表
+
+#列表转数据框
+curDataDf = allcurData[1]
+for(list in allcurData[-1])
+{
+  curDataDf  = cbind(curDataDf ,list) 
+}
+head(curDataDf)
+#write.csv(curDataDf,"result.csv")
+```
+
+
+### 第二题
+```{r,warning=FALSE,message=FALSE}
+##lapply批量读取数据，结果为list
+library(utils)
+unzip("US_Foreign_Aid.zip")
+library(stringr)
+theFiles=dir(pattern = "US_Foreign_Aid_")
+theFiles 
+theFiles = theFiles[c(3,4,5,6,7,8,1,2)] #调整顺序，40-50-60-...-00-10
+
+Aid_list<- lapply(theFiles, function(x){read.csv(x, header=T)})  
+names(Aid_list) = substr(theFiles,12,18)
+head(Aid_list$Aid_00s)
+
+#把list中的数据合并成大的数据框
+library(plyr)
+Aid_df = Aid_list[[1]]
+for(i in 1:length(Aid_list[-1]))
+{
+  Aid_df = join(x=Aid_df,y=Aid_list[-1][[i]],
+                by=c("Country.Name","Program.Name")) 
+}
+head(Aid_df)
+
+#把年份变成新列year的元素
+library(reshape2)#重构和整合数据集的工具包
+Aid_df2 = melt(data = Aid_df,
+               id.vars = c("Country.Name","Program.Name"),#标识变量(不动的那些列)!
+               #measure.vars,#度量变量（默认除了id.vars之外所有的）
+               variable.name = "year", #度量变量名被当做变量值，放入名为 “variable”的新变量列
+               na.rm = TRUE,
+               value.name = "money",#度量变量值的列，命名为“value”
+               factorsAsStrings = TRUE)
+
+head(Aid_df2)
+
+Aid_df2$year = as.numeric(substr(Aid_df2$year,3,6))
+head(Aid_df2)
+```

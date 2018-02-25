@@ -1,0 +1,121 @@
+---
+title: "数据预处理——第二次作业"
+author: "司徒雪颖"
+date: "2017年10月30日"
+output: 
+  prettydoc::html_pretty:
+    theme:  hpstr
+    highlight: github
+---
+
+
+### 对比数据集flights中的变量dep_time，sched_dep_time，与dep_delay，看是否一致？
+
+- 先查看缺失值情况
+```{r,warning=FALSE,message=FALSE}
+library(nycflights13)
+data(flights)
+head(flights)
+dim(flights)
+ #查看是否有缺失值
+any(is.na(flights)) 
+library(mice)
+library(VIM)
+md.pattern(flights)#查看缺失值情况
+aggr(flights, prop=FALSE, numbers=TRUE) #plot, more intuitional to display
+#dep_time dep_delay   8255缺失值
+```
+
+- 改成时间格式,方便dep_time，sched_dep_time相减
+```{r,warning=FALSE,message=FALSE}
+library(lubridate)  
+library(dplyr)
+make_datetime_100 <- function(year, month, day, time) 
+{
+  make_datetime(year, month, day, time %/% 100, time %% 100)
+}
+
+flights_dt <- 
+  flights %>% 
+  filter(!is.na(dep_time), !is.na(dep_delay)) %>% 
+  mutate(
+    dep_time = make_datetime_100(year, month, day, dep_time), 
+    sched_dep_time = make_datetime_100(year, month, day, sched_dep_time ),
+    dep_delay2 = (dep_time-sched_dep_time)/60,
+    weekday = wday(sched_dep_time))
+
+head(flights_dt)
+```
+
+- 因为存在延误后第二天凌晨出发的航班，因此原定时间和飞机离开时间相减后,要加上1440min即24h，最终结果是全部相等
+```{r,warning=FALSE,message=FALSE}
+sum(flights_dt$dep_delay!=flights_dt$dep_delay2 & flights_dt$dep_delay!=flights_dt$dep_delay2+1440)
+```
+
+
+### 一天中不同时间点的平均延误时间是怎么样的？
+
+- 一天中飞机最早起飞时间是凌晨5点，此时飞机平均延误时间最短，从5点开始至21点，飞机平均延误时长逐渐递增，在19,10,21点达到峰值，然后迅速下降。
+
+- 对于飞机提早几分钟出发的情况，延误时间全部赋值为0，即没有延误。否则会使平均延误时间偏小
+```{r,warning=FALSE,message=FALSE}
+library(ggplot2)
+flights_dt$hour = factor(flights_dt$hour,levels = c(5:23))
+flights_dt$dep_delay[flights_dt$dep_delay<0] = 0
+#24小时与延误时长分布 箱线图
+p = ggplot(flights_dt)+aes(x = factor(hour),y = dep_delay)
+p+geom_boxplot(outlier.shape = NA, na.rm = T)+ylim(c(1,200))
+#24小时与延误平均时长 折线图
+p+aes(x = factor(hour),y = dep_delay,group = 1)+stat_summary(fun.y = "mean",geom = "line")
+```
+
+### 如果想要最小化飞机延误的概率，一周中哪天出行是最好的选择？
+
+- 周五出行遇上延误的概率最高，周日最低，因此周日出行时最好的选择
+```{r,warning=FALSE,message=FALSE}
+#星期几与延误的概率
+den = function(y) {sum(y>0)/length(y)}
+p+aes(x = factor(weekday),y = dep_delay,group = 1)+stat_summary(fun.y = den,geom = "line")
+```
+
+### 在flights数据集中计算每个目的地机场的平均延误时间。
+
+- 从flights数据中求得目的地机场及其平均延误时间，并与airports数据合并
+```{r,warning=FALSE,message=FALSE}
+data("airports")
+head(airports)
+ap_delay = aggregate(dep_delay~dest,data =flights_dt,mean)
+flt_ap = merge(x = ap_delay,y = airports,by.x = "dest",by.y = "faa",all.x = T)
+head(flt_ap)
+```
+
+- 可视化不同目的地的飞机延误程度，除了美国的机场外，还有中国重庆机场，夏威夷火奴鲁鲁机场（在太平洋中心）
+
+```{r,warning=FALSE,message=FALSE}
+library(maps)
+states_map <- map_data("state")
+head(states_map)
+ggplot() +
+  geom_polygon(data = states_map, aes(x=long,y=lat,group=group),fill="white",colour="grey70",alpha=0.6) +
+  geom_jitter(data=flt_ap, aes(x = lon,y = lat,size=dep_delay), colour="steelblue", alpha=0.6)
+```
+
+### 研究飞机的使用寿命与延误情况之间是否有关系？
+- 合并flights与planes
+```{r,warning=FALSE,message=FALSE}
+library(plyr)
+data("planes")
+head(planes)
+planes$age = 2013-planes$year
+flt_pl = join(flights_dt,planes,by = "tailnum")
+head(flt_pl)
+```
+- 无论是从飞机使用年限与平均延误时间来看，呈现出使用年限越长，延误时长方差越大的情况，但总体平均延误时长相差不大。从飞机使用年限与延误概率来看，即使超过35年的飞机很少使用，但遇到延误概率明显增大，说明超过35年的飞机延误情况十分不稳定。
+```{r,warning=FALSE,message=FALSE}
+# 飞机使用年限与平均延误时间
+ggplot(flt_pl,aes(x = age,y = dep_delay))+stat_summary(fun.y = "mean",geom = "line",na.rm=T)
+#使用年限分布
+ggplot(flt_pl)+geom_histogram(aes(age),binwidth = 5) 
+#飞机使用年限与延误概率
+ggplot(flt_pl,aes(x = age,y = dep_delay))+stat_summary(fun.y = den,geom = "line",na.rm=T)
+```
