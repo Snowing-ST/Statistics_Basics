@@ -16,7 +16,7 @@ output:
 - 训练模型
 
 ## 二、案例分析：英超数据
-###（一）读入数据
+### （一）读入数据
 从summary可以看出，很多计数变量均为右偏分布，如进球、助攻、传球、过人等自变量和下一年进球这个因变量。
 ```{r,warning=FALSE,message=FALSE}
 library(corrplot)
