@@ -1,4 +1,4 @@
-# statistics_base
+# statistics_basics
 - the homework of statistic base
 - tips：预览html文件，在网址前加 http://htmlpreview.github.io/?
 
@@ -31,5 +31,29 @@ plyr/reshape2包的应用
   
   
   ## [visualization](https://github.com/Snowing-ST/statistics-basics/tree/master/visualization):R语言可视化
+- [可视化作业1.pdf](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E5%8F%AF%E8%A7%86%E5%8C%96%E4%BD%9C%E4%B8%9A1.pdf)
 
+    - 基础绘图：条形图/堆积柱状图/直方图/饼图/ggplot分面
 
+- [可视化作业2.pdf](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E5%8F%AF%E8%A7%86%E5%8C%96%E4%BD%9C%E4%B8%9A2.pdf)
+
+    - 1. 三维数据可视化：等高线图/气泡图
+    - 2. 多维数据可视化：散点图矩阵/相关图矩阵/平行坐标图/雷达图/热图
+    - 3. 分布形态可视化：直方图/密度图/箱线图/小提琴图
+    - 4. 常用分布可视化：F分布/卡方分布
+    - 5. 交互图：plotly
+
+- [可视化作业3.html](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E5%8F%AF%E8%A7%86%E5%8C%96%E4%BD%9C%E4%B8%9A3.html)
+
+**2014——“数“说世界发展**
+    - 一．数据介绍
+    - 二、世界人口分布
+    - 三、世界各国发展情况
+        - 1.经济水平
+        - 2.生活水平
+        - 3.健康水平
+        - 4.文化水平
+
+- [数据可视化（期末分析报告）.pdf](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E6%95%B0%E6%8D%AE%E5%8F%AF%E8%A7%86%E5%8C%96%EF%BC%88%E6%9C%9F%E6%9C%AB%E5%88%86%E6%9E%90%E6%8A%A5%E5%91%8A%EF%BC%89.pdf)
+
+    - 风玫瑰图/高级的直方图/聚类热力图/地图热力图
