@@ -46,8 +46,7 @@ plyr/reshape2包的应用
 - [可视化作业3.html](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E5%8F%AF%E8%A7%86%E5%8C%96%E4%BD%9C%E4%B8%9A3.html)
 
 **2014——“数“说世界发展**
-
-    - 一、数据介绍
+    - 一、数据介绍
     - 二、世界人口分布
     - 三、世界各国发展情况
         - 1.经济水平
