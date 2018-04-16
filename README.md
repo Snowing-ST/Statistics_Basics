@@ -19,14 +19,14 @@ plyr/reshape2包的应用
 
 - [数据预处理-缺失值处理作业.Rmd](https://github.com/Snowing-ST/statistics-basics/blob/master/data_preprocess/%E6%95%B0%E6%8D%AE%E9%A2%84%E5%A4%84%E7%90%86-%E7%BC%BA%E5%A4%B1%E5%80%BC%E5%A4%84%E7%90%86%E4%BD%9C%E4%B8%9A.Rmd)
 
-**缺失值处理：**
+缺失值处理：
 
-    - 1.读入数据及数据准备
-    - 2.缺失模式探索（Exploration of Missing pattern）
-    - 3.简单随机插补（simple random imputation）
-    - 4.回归插补（Using regression predictions to perform deterministic imputation）
-    - 5.随机回归插补（Random regression imputation）
-    - 6. 两阶段插补（two-step imputation）
-    - 7. 迭代回归插补(iterative regression imputation)
+  - 1.读入数据及数据准备
+  - 2.缺失模式探索（Exploration of Missing pattern）
+  - 3.简单随机插补（simple random imputation）
+  - 4.回归插补（Using regression predictions to perform deterministic imputation）
+  - 5.随机回归插补（Random regression imputation）
+  - 6. 两阶段插补（two-step imputation）
+  - 7. 迭代回归插补(iterative regression imputation)
 
 
