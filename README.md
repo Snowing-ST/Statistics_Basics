@@ -26,8 +26,8 @@ plyr/reshape2包的应用
   - 3.简单随机插补（simple random imputation）
   - 4.回归插补（Using regression predictions to perform deterministic imputation）
   - 5.随机回归插补（Random regression imputation）
-  - 6. 两阶段插补（two-step imputation）
-  - 7. 迭代回归插补(iterative regression imputation)
+  - 6.两阶段插补（two-step imputation）
+  - 7.迭代回归插补(iterative regression imputation)
   
   ## [visualization](https://github.com/Snowing-ST/statistics-basics/tree/master/visualization):R语言可视化
 
