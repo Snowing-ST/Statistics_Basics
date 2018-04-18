@@ -6,7 +6,7 @@
 - [面膜数据分析.pdf](https://github.com/Snowing-ST/statistics-basics/blob/master/EDA/%E9%9D%A2%E8%86%9C%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90.pdf):描述统计
 - [投资城市评价.pdf](https://github.com/Snowing-ST/statistics-basics/blob/master/EDA/%E6%8A%95%E8%B5%84%E5%9F%8E%E5%B8%82%E8%AF%84%E4%BB%B7.pdf):主成分分析
 - [手机问卷分析.pdf](https://github.com/Snowing-ST/statistics-basics/blob/master/EDA/%E6%89%8B%E6%9C%BA%E9%97%AE%E5%8D%B7%E5%88%86%E6%9E%90.pdf):因子分析
-- [英超数据案例分析.html](https://github.com/Snowing-ST/statistics-basics/blob/master/EDA/%E8%8B%B1%E8%B6%85%E6%95%B0%E6%8D%AE%E6%A1%88%E4%BE%8B%E5%88%86%E6%9E%90.html):主成分分析
+- [英超数据案例分析.html](http://htmlpreview.github.io/?https://github.com/Snowing-ST/statistics-basics/blob/master/EDA/%E8%8B%B1%E8%B6%85%E6%95%B0%E6%8D%AE%E6%A1%88%E4%BE%8B%E5%88%86%E6%9E%90.html):主成分分析
 
 ## [data_preprocess](https://github.com/Snowing-ST/statistics_base/tree/master/data_preprocess):数据预处理
 - [数据预处理-第1次作业.Rmd](https://github.com/Snowing-ST/statistics-basics/blob/master/data_preprocess/%E6%95%B0%E6%8D%AE%E9%A2%84%E5%A4%84%E7%90%86-%E7%AC%AC1%E6%AC%A1%E4%BD%9C%E4%B8%9A.Rmd)
@@ -33,7 +33,8 @@ plyr/reshape2包的应用
 ## [visualization](https://github.com/Snowing-ST/statistics-basics/tree/master/visualization):R语言可视化
 - [可视化作业1.pdf](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E5%8F%AF%E8%A7%86%E5%8C%96%E4%BD%9C%E4%B8%9A1.pdf)
 
-    - 基础绘图：条形图/堆积柱状图/直方图/饼图/ggplot分面[code](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E5%8F%AF%E8%A7%86%E5%8C%96%E4%BD%9C%E4%B8%9A1.R)
+    - 基础绘图：条形图/堆积柱状图/直方图/饼图/ggplot分面
+    - [code](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E5%8F%AF%E8%A7%86%E5%8C%96%E4%BD%9C%E4%B8%9A1.R)
 
 - [可视化作业2.pdf](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E5%8F%AF%E8%A7%86%E5%8C%96%E4%BD%9C%E4%B8%9A2.pdf)
 
@@ -46,7 +47,9 @@ plyr/reshape2包的应用
 
 - [可视化作业3.pdf](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E5%8F%AF%E8%A7%86%E5%8C%96%E4%BD%9C%E4%B8%9A3.pdf)
 
-**2014——“数“说世界发展**[code](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E5%8F%AF%E8%A7%86%E5%8C%96%E4%BD%9C%E4%B8%9A3.Rmd)
+**2014——“数“说世界发展**
+
+[code](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E5%8F%AF%E8%A7%86%E5%8C%96%E4%BD%9C%E4%B8%9A3.Rmd)
 
   - 一、数据介绍
   - 二、世界人口分布
@@ -58,7 +61,8 @@ plyr/reshape2包的应用
 
 - [数据可视化（期末分析报告）.pdf](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E6%95%B0%E6%8D%AE%E5%8F%AF%E8%A7%86%E5%8C%96%EF%BC%88%E6%9C%9F%E6%9C%AB%E5%88%86%E6%9E%90%E6%8A%A5%E5%91%8A%EF%BC%89.pdf)
 
-    - 风玫瑰图/高级的直方图/聚类热力图/地图热力图[code](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E6%95%B0%E6%8D%AE%E5%8F%AF%E8%A7%86%E5%8C%96%EF%BC%88%E6%9C%9F%E6%9C%AB%E5%88%86%E6%9E%90%E6%8A%A5%E5%91%8A%E4%BB%A3%E7%A0%81%EF%BC%89.Rmd)
+    - 风玫瑰图/高级的直方图/聚类热力图/地图热力图
+    - [code](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E6%95%B0%E6%8D%AE%E5%8F%AF%E8%A7%86%E5%8C%96%EF%BC%88%E6%9C%9F%E6%9C%AB%E5%88%86%E6%9E%90%E6%8A%A5%E5%91%8A%E4%BB%A3%E7%A0%81%EF%BC%89.Rmd)
 
 ## [sampling](https://github.com/Snowing-ST/statistics-basics/tree/master/sampling):抽样
 - 已知样本质量求样本量
