@@ -34,7 +34,7 @@ plyr/reshape2包的应用
 - [可视化作业1.pdf](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E5%8F%AF%E8%A7%86%E5%8C%96%E4%BD%9C%E4%B8%9A1.pdf)
 
     - 基础绘图：条形图/堆积柱状图/直方图/饼图/ggplot分面
-    - [code](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E5%8F%AF%E8%A7%86%E5%8C%96%E4%BD%9C%E4%B8%9A1.R)
+    - [code](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E5%8F%AF%E8%A7%86%E5%8C%96%E4%BD%9C%E4%B8%9A1.R)
 
 - [可视化作业2.pdf](https://github.com/Snowing-ST/statistics-basics/blob/master/visualization/%E5%8F%AF%E8%A7%86%E5%8C%96%E4%BD%9C%E4%B8%9A2.pdf)
 
